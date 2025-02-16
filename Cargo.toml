@@ -1,0 +1,18 @@
+[package]
+name = "pluto-src"
+version = "0.1.0+0.10.4"
+authors = ["Aleksandr Orlenko <zxteam@protonmail.com>"]
+edition = "2021"
+repository = "https://github.com/mlua-rs/pluto-src-rs"
+keywords = ["lua", "pluto"]
+readme = "README.md"
+license = "MIT"
+description = """
+Sources of Pluto (Lua 5.4 dialect) and logic to build it.
+"""
+
+[workspace]
+members = ["testcrate"]
+
+[dependencies]
+cc = { version = "1.2", features = ["parallel"] }
