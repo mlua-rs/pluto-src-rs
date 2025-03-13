@@ -10,6 +10,14 @@ pub struct Build {
     max_stack_size: Option<usize>,
     // Use longjmp instead of C++ exceptions
     use_longjmp: Option<bool>,
+    // Disable bytecode loading
+    disable_bytecode: Option<bool>,
+    // Disable filesystem access
+    disable_fs: Option<bool>,
+    // Disable os.os.execute and io.popen
+    disable_os_exec: Option<bool>,
+    // Disable loading any C modules or shared libraries
+    disable_binaries: Option<bool>,
 }
 
 pub struct Artifacts {
@@ -27,6 +35,10 @@ impl Build {
             host: env::var("HOST").ok(),
             max_stack_size: None,
             use_longjmp: None,
+            disable_bytecode: None,
+            disable_fs: None,
+            disable_os_exec: None,
+            disable_binaries: None,
         }
     }
 
@@ -55,6 +67,30 @@ impl Build {
         self
     }
 
+    // Controls `PLUTO_DISABLE_COMPILED` define
+    pub fn disable_bytecode(&mut self, disable: bool) -> &mut Build {
+        self.disable_bytecode = Some(disable);
+        self
+    }
+
+    // Controls `PLUTO_NO_FILESYSTEM` define
+    pub fn disable_fs(&mut self, disable: bool) -> &mut Build {
+        self.disable_fs = Some(disable);
+        self
+    }
+
+    // Controls `PLUTO_NO_OS_EXECUTE` define
+    pub fn disable_os_exec(&mut self, disable: bool) -> &mut Build {
+        self.disable_os_exec = Some(disable);
+        self
+    }
+
+    // Controls `PLUTO_NO_BINARIES` define
+    pub fn disable_binaries(&mut self, disable: bool) -> &mut Build {
+        self.disable_binaries = Some(disable);
+        self
+    }
+
     pub fn build(&mut self) -> Artifacts {
         let target = &self.target.as_ref().expect("TARGET not set")[..];
         let host = &self.host.as_ref().expect("HOST not set")[..];
@@ -80,14 +116,6 @@ impl Build {
             .flag_if_supported("-fno-rtti")
             .flag_if_supported("-Wno-multichar")
             .cpp(true);
-
-        if let Some(max_stack_size) = self.max_stack_size {
-            config.define("LUAI_MAXSTACK", &*max_stack_size.to_string());
-        }
-
-        if let Some(true) = self.use_longjmp {
-            config.define("LUA_USE_LONGJMP", "1");
-        }
 
         if cfg!(debug_assertions) {
             config.define("LUA_USE_APICHECK", None);
@@ -123,6 +151,30 @@ impl Build {
             _ => {}
         }
         soup_config.out_dir(out_dir).compile(soup_lib_name);
+
+        if let Some(max_stack_size) = self.max_stack_size {
+            config.define("LUAI_MAXSTACK", &*max_stack_size.to_string());
+        }
+
+        if let Some(true) = self.use_longjmp {
+            config.define("LUA_USE_LONGJMP", None);
+        }
+
+        if let Some(true) = self.disable_bytecode {
+            config.define("PLUTO_DISABLE_COMPILED", None);
+        }
+
+        if let Some(true) = self.disable_fs {
+            config.define("PLUTO_NO_FILESYSTEM", None);
+        }
+
+        if let Some(true) = self.disable_os_exec {
+            config.define("PLUTO_NO_OS_EXECUTE", None);
+        }
+
+        if let Some(true) = self.disable_binaries {
+            config.define("PLUTO_NO_BINARIES", None);
+        }
 
         // Build Pluto
         let pluto_lib_name = "pluto";
